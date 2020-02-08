@@ -10,6 +10,10 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
     {
         private Dictionary<string, ScooterExtended> scooters = new Dictionary<string, ScooterExtended>();
 
+        private bool scooterExists(string id)
+        {
+            return scooters.Any(a => a.Key.ToUpper() == id.ToUpper());
+        }
         public ScooterService() 
         { 
 
@@ -35,7 +39,7 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
         }
         public void AddScooter(string id, decimal pricePerMinute)
         {
-            if(scooters.Any(a => a.Key.ToUpper() == id.ToUpper()))
+            if (scooterExists(id))
                 throw new ScooterServiceScooterDuplicateIdException("Duplicate id add attempt");
 
             scooters.Add(id, new ScooterExtended(id, pricePerMinute));
@@ -43,7 +47,12 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
 
         public Scooter GetScooterById(string scooterId)
         {
-            throw new ScooterServiceScooterNotFoundException("Non existing scooter id detected");
+            scooterId = scooterId.ToUpper();
+
+            if (!scooterExists(scooterId))
+                throw new ScooterServiceScooterNotFoundException("Non existing scooter id detected");
+
+            return scooters.First(f => f.Key.ToUpper() == scooterId).Value;
         }
 
         public IList<Scooter> GetScooters()
@@ -55,7 +64,13 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
 
         public void RemoveScooter(string id)
         {
-            throw new ScooterServiceScooterNotFoundException("Non existing scooter id detected");
+            if (!scooterExists(id))
+                throw new ScooterServiceScooterNotFoundException("Non existing scooter id detected");
+
+            //Since we are adding "as is" but checking uniqueness as case insensitive
+            var key = scooters.First(f => f.Key.ToUpper() == id.ToUpper()).Key;
+
+            scooters.Remove(key);
         }
     }
 }

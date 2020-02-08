@@ -61,6 +61,19 @@ namespace ScooterRentalServiceBusinessLogicTests
             Assert.Throws<ScooterServiceScooterNotFoundException>(() => scotterService.GetScooterById(generatedId));
         }
         [Fact]
+        public void CanGetScooter()
+        {
+            var testDataSet = ScooterTestDataFactory();
+
+            var testItem = testDataSet.First();
+
+            var scotterService = new ScooterService(testDataSet);
+
+            var retrievedScooter = scotterService.GetScooterById(testItem.Id);
+
+            Assert.Equal(testItem, retrievedScooter);
+        }
+        [Fact]
         public void CanThrowWrongScooterIdRemove()
         {
             var scotterService = new ScooterService(ScooterTestDataFactory());
@@ -68,14 +81,30 @@ namespace ScooterRentalServiceBusinessLogicTests
             Assert.Throws<ScooterServiceScooterNotFoundException>(() => scotterService.RemoveScooter(generatedId));
         }
         [Fact]
+        public void CanRemoveScooter()
+        {
+            var testDataSet = ScooterTestDataFactory().ToDictionary(k => k.Id, val => val);
+            var baseDataSet = ScooterTestDataFactory();
+
+            var scotterService = new ScooterService(testDataSet);
+
+            var itemToRemove = testDataSet.First().Key;
+
+            scotterService.RemoveScooter(itemToRemove);
+
+            Assert.True(testDataSet.Count + 1 == baseDataSet.Count);
+
+            Assert.True(!testDataSet.Any(a => a.Key == itemToRemove)
+                && baseDataSet.Any(a => a.Id == itemToRemove)
+                );
+        }
+        [Fact]
         public void CanThrowDuplicateScooterAdd()
         {
-            var scotterService = new ScooterService(ScooterTestDataFactory());
+            var testDataSet = ScooterTestDataFactory();
+            var scotterService = new ScooterService(testDataSet);
 
-            var duplicateid = "B01D04BE-BA12-49B3-806E-B517E4084CEA";
-            var pricePerMinute = 20;
-
-            Assert.Throws<ScooterServiceScooterDuplicateIdException>(() => scotterService.AddScooter(duplicateid, pricePerMinute));
+            Assert.Throws<ScooterServiceScooterDuplicateIdException>(() => scotterService.AddScooter(testDataSet.First().Id, defaultPrice));
         }
         [Fact]
         public void CanAddScooter()
