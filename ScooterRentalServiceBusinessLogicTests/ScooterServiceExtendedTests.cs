@@ -6,7 +6,7 @@ using Xunit;
 
 namespace ScooterRentalServiceBusinessLogicTests
 {
-    public class ScooterServiceExtendedTests : ScooterServiceTests
+    public class ScooterServiceExtendedTests
     {
         [Fact]
         public void CanGetExtendedScooters()
@@ -23,7 +23,7 @@ namespace ScooterRentalServiceBusinessLogicTests
 
             Assert.True(scooters.Count == 0);
 
-            var testDataSet = ScooterTestDataFactory();
+            var testDataSet = TestDataFactory.GetScooterTestDataSet();
 
             scotterService = new ScooterServiceExtended(testDataSet);
 
