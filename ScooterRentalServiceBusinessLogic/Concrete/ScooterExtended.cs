@@ -11,6 +11,14 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
         public ScooterExtended(string id, decimal pricePerMinute) : base(id, pricePerMinute)
         {
         }
+
+        public ScooterExtended(string id, decimal pricePerMinute, List<RentPeriod> rentPeriods) : base(id, pricePerMinute)
+        {
+            if (rentPeriods == null)
+                return;
+
+            RentPeriods = rentPeriods;
+        }
     }
     public class RentPeriod
     {

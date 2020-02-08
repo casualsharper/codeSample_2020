@@ -89,5 +89,15 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
             //and was rented only on paper etc?            
             scooters.Remove(scooterToDelete.Key);
         }
+
+        public ScooterExtended GetExtendedScooter(string scooterId)
+        {
+            scooterId = scooterId.ToUpper();
+
+            if (!scooterExists(scooterId))
+                throw new ScooterServiceScooterNotFoundException("Non existing scooter id detected");
+
+            return scooters.First(f => f.Key.ToUpper() == scooterId).Value;
+        }
     }
 }

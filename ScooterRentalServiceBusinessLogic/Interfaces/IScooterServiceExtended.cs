@@ -8,5 +8,6 @@ namespace ScooterRentalServiceBusinessLogic.Interfaces
     public interface IScooterServiceExtended : IScooterService
     {
         IList<ScooterExtended> GetExtendedScooters();
+        ScooterExtended GetExtendedScooter(string scooterId);
     }
 }
