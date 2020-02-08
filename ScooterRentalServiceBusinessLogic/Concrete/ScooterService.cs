@@ -8,7 +8,7 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
 {
     public class ScooterService : IScooterService
     {
-        private Dictionary<string, ScooterExtended> scooters = new Dictionary<string, ScooterExtended>();
+        protected Dictionary<string, ScooterExtended> scooters = new Dictionary<string, ScooterExtended>();
 
         private bool scooterExists(string id)
         {
@@ -23,7 +23,11 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
             if (scooters == null)
                 return;
 
-            var distinctCount = scooters.Select(s => s.Id).Distinct().ToList().Count;
+            var distinctCount = scooters
+                .Select(s => s.Id)
+                .Distinct()
+                .ToList()
+                .Count;
 
             if (distinctCount != scooters.Count)
                 throw new ScooterServiceException("Duplicate scooter id detected!");
@@ -68,9 +72,15 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
                 throw new ScooterServiceScooterNotFoundException("Non existing scooter id detected");
 
             //Since we are adding "as is" but checking uniqueness as case insensitive
-            var key = scooters.First(f => f.Key.ToUpper() == id.ToUpper()).Key;
+            var scooterToDelete = scooters.First(f => f.Key.ToUpper() == id.ToUpper());
 
-            scooters.Remove(key);
+            if(scooterToDelete.Value.IsRented)
+                throw new ScooterServiceScooterInRentException("Scooter is being used");
+
+            //Also it is not clear regarding yearly profit income, do we count (keep) profit for deleted scooters?
+            //In common sence we should, but if there is a real reason for deletion, like it was a ghost scooter that existed
+            //and was rented only on paper etc?            
+            scooters.Remove(scooterToDelete.Key);
         }
     }
 }

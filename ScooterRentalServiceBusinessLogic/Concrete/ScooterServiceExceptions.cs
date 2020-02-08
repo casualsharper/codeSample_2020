@@ -25,4 +25,11 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
         {
         }
     }
+    public class ScooterServiceScooterInRentException : ScooterServiceException
+    {
+        public ScooterServiceScooterInRentException(string message)
+            : base(message)
+        {
+        }
+    }
 }

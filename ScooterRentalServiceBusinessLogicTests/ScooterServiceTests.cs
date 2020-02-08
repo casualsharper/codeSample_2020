@@ -8,9 +8,9 @@ namespace ScooterRentalServiceBusinessLogicTests
 {
     public class ScooterServiceTests
     {
-        private string generatedId => Guid.NewGuid().ToString();
-        private readonly decimal defaultPrice = 10m;
-        private List<ScooterExtended> ScooterTestDataFactory()
+        protected string generatedId => Guid.NewGuid().ToString();
+        protected readonly decimal defaultPrice = 10m;
+        protected List<ScooterExtended> ScooterTestDataFactory()
         {
             return new List<ScooterExtended> {
                 new ScooterExtended("b01d04be-ba12-49b3-806e-b517e4084cea",0.01m),
@@ -22,7 +22,7 @@ namespace ScooterRentalServiceBusinessLogicTests
         [Fact]
         public void CanThrowDuplicateItemInit()
         {
-            var duplicateId = "1";
+            var duplicateId = generatedId;
             var scotters = new List<ScooterExtended> {
                 new ScooterExtended(duplicateId, defaultPrice),
                 new ScooterExtended(duplicateId, defaultPrice)
@@ -76,9 +76,17 @@ namespace ScooterRentalServiceBusinessLogicTests
         [Fact]
         public void CanThrowWrongScooterIdRemove()
         {
-            var scotterService = new ScooterService(ScooterTestDataFactory());
+            var testDataSet = ScooterTestDataFactory();
+
+            var testItem = testDataSet.First();
+
+            testItem.IsRented = true;
+
+            var scotterService = new ScooterService(testDataSet);
 
             Assert.Throws<ScooterServiceScooterNotFoundException>(() => scotterService.RemoveScooter(generatedId));
+
+            Assert.Throws<ScooterServiceScooterInRentException>(() => scotterService.RemoveScooter(testItem.Id));
         }
         [Fact]
         public void CanRemoveScooter()

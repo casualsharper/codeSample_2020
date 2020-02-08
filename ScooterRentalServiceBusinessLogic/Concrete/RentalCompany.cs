@@ -7,6 +7,7 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
 {
     public class RentalCompany : IRentalCompany
     {
+        private IScooterServiceExtended scooterServiceExtended = new ScooterServiceExtended(); 
         public string Name { get; }
 
         public RentalCompany(string name)
