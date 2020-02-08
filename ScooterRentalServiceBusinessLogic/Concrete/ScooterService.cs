@@ -6,7 +6,7 @@ using System.Linq;
 
 namespace ScooterRentalServiceBusinessLogic.Concrete
 {
-    public class ScooterService : IScooterService
+    public class ScooterService : IScooterServiceExtended
     {
         protected Dictionary<string, ScooterExtended> scooters = new Dictionary<string, ScooterExtended>();
 
@@ -63,6 +63,13 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
         {
             return scooters?
                 .Select(s => (Scooter)s.Value)
+                .ToList();
+        }
+
+        public IList<ScooterExtended> GetExtendedScooters()
+        {
+            return scooters?
+                .Select(s => s.Value)
                 .ToList();
         }
 

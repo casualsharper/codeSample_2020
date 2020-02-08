@@ -40,7 +40,7 @@ namespace ScooterRentalServiceBusinessLogicTests
 
             scooters = scotterService.GetScooters();
 
-            Assert.True(scooters.Count == testDataSet.Count);
+            Assert.Equal(scooters.Count,testDataSet.Count);
         }
         [Fact]
         public void CanThrowWrongScooterIdGet()
@@ -61,6 +61,29 @@ namespace ScooterRentalServiceBusinessLogicTests
             var retrievedScooter = scotterService.GetScooterById(testItem.Id);
 
             Assert.Equal(testItem, retrievedScooter);
+        }
+        [Fact]
+        public void CanGetExtendedScooters()
+        {
+            var scotterService = new ScooterService((List<ScooterExtended>)null);
+
+            var scooters = scotterService.GetExtendedScooters();
+
+            Assert.True(scooters.Count == 0);
+
+            scotterService = new ScooterService((Dictionary<string, ScooterExtended>)null);
+
+            scooters = scotterService.GetExtendedScooters();
+
+            Assert.True(scooters.Count == 0);
+
+            var testDataSet = TestDataFactory.GetScooterTestDataSet();
+
+            scotterService = new ScooterService(testDataSet);
+
+            scooters = scotterService.GetExtendedScooters();
+
+            Assert.Equal(scooters.Count, testDataSet.Count);
         }
         [Fact]
         public void CanThrowWrongScooterIdRemove()
