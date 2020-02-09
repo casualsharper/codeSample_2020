@@ -11,10 +11,10 @@ namespace ScooterRentalServiceBusinessLogicTests
         [Fact]
         public void CanThrowDuplicateItemInit()
         {
-            var duplicateId = TestDataFactory.generatedId;
+            var duplicateId = TestDataFactory.GeneratedId;
             var scotters = new List<ScooterExtended> {
-                new ScooterExtended(duplicateId, TestDataFactory.defaultPrice),
-                new ScooterExtended(duplicateId, TestDataFactory.defaultPrice)
+                new ScooterExtended(duplicateId, TestDataFactory.DefaultPrice),
+                new ScooterExtended(duplicateId, TestDataFactory.DefaultPrice)
             };
 
             Assert.Throws<ScooterServiceException>(() => new ScooterService(scotters));
@@ -22,24 +22,17 @@ namespace ScooterRentalServiceBusinessLogicTests
         [Fact]
         public void CanGetScooters()
         {
-            var scotterService = new ScooterService((List<ScooterExtended>)null);
-
-            var scooters = scotterService.GetScooters();
-
-            Assert.True(scooters.Count == 0);
-
-            scotterService = new ScooterService((Dictionary<string, ScooterExtended>)null);
-
-            scooters = scotterService.GetScooters();
-
-            Assert.True(scooters.Count == 0);
-
+            var scotterServiceNullList = new ScooterService((List<ScooterExtended>)null);          
+            var scotterServiceNullDict = new ScooterService((Dictionary<string, ScooterExtended>)null);
             var testDataSet = TestDataFactory.GetScooterTestDataSet();
+            var scotterService = new ScooterService(testDataSet);
 
-            scotterService = new ScooterService(testDataSet);
+            var scootersNullList = scotterServiceNullList.GetScooters();
+            var scootersNullDict = scotterServiceNullDict.GetScooters();
+            var scooters = scotterService.GetScooters();          
 
-            scooters = scotterService.GetScooters();
-
+            Assert.True(scootersNullList.Count == 0);
+            Assert.True(scootersNullDict.Count == 0);
             Assert.True(scooters.Count == testDataSet.Count);
         }
         [Fact]
@@ -47,7 +40,7 @@ namespace ScooterRentalServiceBusinessLogicTests
         {
             var scotterService = new ScooterService(TestDataFactory.GetScooterTestDataSet());
 
-            Assert.Throws<ScooterServiceScooterNotFoundException>(() => scotterService.GetScooterById(TestDataFactory.generatedId));
+            Assert.Throws<ScooterServiceScooterNotFoundException>(() => scotterService.GetScooterById(TestDataFactory.GeneratedId));
         }
         [Fact]
         public void CanGetScooter()
@@ -65,24 +58,17 @@ namespace ScooterRentalServiceBusinessLogicTests
         [Fact]
         public void CanGetExtendedScooters()
         {
-            var scotterService = new ScooterService((List<ScooterExtended>)null);
+            var scotterServiceNullList = new ScooterService((List<ScooterExtended>)null);
+            var scotterServiceNullDict = new ScooterService((Dictionary<string, ScooterExtended>)null);
+            var testDataSet = TestDataFactory.GetScooterTestDataSet();
+            var scotterService = new ScooterService(testDataSet);
 
+            var scootersNullList = scotterServiceNullList.GetExtendedScooters();
+            var scootersNullDict = scotterServiceNullDict.GetExtendedScooters();
             var scooters = scotterService.GetExtendedScooters();
 
-            Assert.True(scooters.Count == 0);
-
-            scotterService = new ScooterService((Dictionary<string, ScooterExtended>)null);
-
-            scooters = scotterService.GetExtendedScooters();
-
-            Assert.True(scooters.Count == 0);
-
-            var testDataSet = TestDataFactory.GetScooterTestDataSet();
-
-            scotterService = new ScooterService(testDataSet);
-
-            scooters = scotterService.GetExtendedScooters();
-
+            Assert.True(scootersNullList.Count == 0);
+            Assert.True(scootersNullDict.Count == 0);
             Assert.True(scooters.Count == testDataSet.Count);
         }
         [Fact]
@@ -96,8 +82,7 @@ namespace ScooterRentalServiceBusinessLogicTests
 
             var scotterService = new ScooterService(testDataSet);
 
-            Assert.Throws<ScooterServiceScooterNotFoundException>(() => scotterService.RemoveScooter(TestDataFactory.generatedId));
-
+            Assert.Throws<ScooterServiceScooterNotFoundException>(() => scotterService.RemoveScooter(TestDataFactory.GeneratedId));
             Assert.Throws<ScooterServiceScooterInRentException>(() => scotterService.RemoveScooter(testItem.Id));
         }
         [Fact]
@@ -113,7 +98,6 @@ namespace ScooterRentalServiceBusinessLogicTests
             scotterService.RemoveScooter(itemToRemove);
 
             Assert.True(testDataSet.Count + 1 == baseDataSet.Count);
-
             Assert.True(!testDataSet.Any(a => a.Key == itemToRemove)
                 && baseDataSet.Any(a => a.Id == itemToRemove)
                 );
@@ -124,7 +108,7 @@ namespace ScooterRentalServiceBusinessLogicTests
             var testDataSet = TestDataFactory.GetScooterTestDataSet();
             var scotterService = new ScooterService(testDataSet);
 
-            Assert.Throws<ScooterServiceScooterDuplicateIdException>(() => scotterService.AddScooter(testDataSet.First().Id, TestDataFactory.defaultPrice));
+            Assert.Throws<ScooterServiceScooterDuplicateIdException>(() => scotterService.AddScooter(testDataSet.First().Id, TestDataFactory.DefaultPrice));
         }
         [Fact]
         public void CanAddScooter()
@@ -135,12 +119,11 @@ namespace ScooterRentalServiceBusinessLogicTests
 
             var scotterService = new ScooterService(testDataSet);
 
-            var newScooterId = TestDataFactory.generatedId;
+            var newScooterId = TestDataFactory.GeneratedId;
 
-            scotterService.AddScooter(newScooterId, TestDataFactory.defaultPrice);
+            scotterService.AddScooter(newScooterId, TestDataFactory.DefaultPrice);
 
             Assert.True(testDataSet.Count == baseDataSet.Count + 1);
-
             Assert.True(testDataSet.Any(a => a.Value.Id == newScooterId) 
                 && !baseDataSet.Any(a => a.Id == newScooterId)
                 );

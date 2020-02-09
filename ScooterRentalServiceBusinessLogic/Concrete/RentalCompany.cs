@@ -39,20 +39,43 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
             var scooter = ScooterService.GetExtendedScooter(id);
 
             if (!scooter.IsRented)
-                throw new RentalCompanyException();
+                throw new RentalCompanyException("Scooter is not rented");
 
-            var rentTime = scooter.RentPeriods.First(f => f.RentEnded == null);
-
-            rentTime.RentEnded = DateTime.UtcNow;
+            var cost = ProcessRentPeriod(scooter.RentPeriods);
 
             scooter.IsRented = false;
 
-            return 0m;
+            return cost;
         }
 
         public void StartRent(string id)
         {
-            throw new NotImplementedException();
+            var scooter = ScooterService.GetExtendedScooter(id);
+
+            if (scooter.IsRented)
+                throw new RentalCompanyException("Scooter is already in rent");
+
+            var rentTime = scooter
+                .RentPeriods
+                .FirstOrDefault(f => f.RentEnded == null);
+
+            if (rentTime != null)
+                throw new RentalCompanyException("Corrupted scooter rent periods. Period is not closed");
+
+            scooter.RentPeriods.Add(new RentPeriod { RentStarted = DateTime.Now });
+
+            scooter.IsRented = true;
+        }
+
+        private decimal ProcessRentPeriod(List<RentPeriod> rentPeriods)
+        {
+            var rentTime = rentPeriods
+            .FirstOrDefault(f => f.RentEnded == null);
+
+            if (rentTime == null)
+                throw new RentalCompanyException("Corrupted scooter rent periods. Period is not open");
+
+            return 0m;
         }
     }
 }
