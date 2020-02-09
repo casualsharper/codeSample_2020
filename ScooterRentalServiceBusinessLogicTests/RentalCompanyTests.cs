@@ -261,7 +261,7 @@ namespace ScooterRentalServiceBusinessLogicTests
 
             var period = 3;
             var timeshift = 10;
-            var dateBase = moqDate.AddDays(-period - 1);
+            var dateBase = moqDate.AddDays(-period);
 
             var testDataSet = TestDataFactory.GetScooterTestDataSet(dateBase, periodDays: period, periodMinutesShift: timeshift);
 
@@ -269,8 +269,8 @@ namespace ScooterRentalServiceBusinessLogicTests
 
             var testRentalCompany = new RentalCompany(companyName, scooterService, moqDateProvider.Object);
 
-            var expectedResultNull = testDataSet.Count * 2 * period * timeshift * TestDataFactory.DefaultPrice + period * timeshift * TestDataFactory.DefaultPrice;
             var expectedResultNotNull = testDataSet.Count * 2 * period * timeshift * TestDataFactory.DefaultPrice;
+            var expectedResultNull = expectedResultNotNull + dailyLimit * TestDataFactory.DefaultPrice * testDataSet.Count * 2;
             var expectedResultYear = testDataSet.Count * period * timeshift * TestDataFactory.DefaultPrice;
 
             var incomeNotNull = testRentalCompany.CalculateIncome(null, false);

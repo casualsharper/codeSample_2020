@@ -140,7 +140,7 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
         private RentPeriod MoreThanOneDayPeriodProcess(List<RentPeriod> rentPeriods, RentPeriod rentTime)
         {
             var endDate = dateTimeHelper.GetUtcDateTimeNow();
-            rentTime.RentEnded = rentTime.RentEnded.HasValue ? rentTime.RentEnded : endDate;
+            rentTime.RentEnded = endDate;
 
             var dayDiff = (int)Math.Round((endDate.Date - rentTime.RentStarted.Date).TotalDays, MidpointRounding.AwayFromZero);
 
@@ -205,14 +205,12 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
                     var dtNow = dateTimeHelper.GetUtcDateTimeNow();
                     var periodClone = new RentPeriod { RentStarted = period.RentStarted , RentEnded = dtNow };
 
-                    if(dtNow.Date != period.RentStarted.Date)
-                    {
-                        MoreThanOneDayPeriodProcess(rentPeriods, periodClone);
-                    }
-                    else
-                    {
-                        rentPeriods.Add(periodClone);
-                    }
+                    rentPeriods.Add(periodClone);
+
+                    if (dtNow.Date == period.RentStarted.Date)
+                        continue;
+
+                     MoreThanOneDayPeriodProcess(rentPeriods, periodClone);
                 }
                 else
                 {
