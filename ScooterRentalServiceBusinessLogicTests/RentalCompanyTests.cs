@@ -99,17 +99,19 @@ namespace ScooterRentalServiceBusinessLogicTests
         [Fact]
         public void CanEndRentLessThanLimit()
         {
-            var rentStartLessThanDailyLimit = DateTime.UtcNow
-                .AddMinutes((int)Math.Round(-dailyLimit / TestDataFactory.DefaultPrice, MidpointRounding.AwayFromZero) + 1);
+            var moqDate = new DateTime(2019, 10, 10, 10, 10, 10, 10);
+            var moqDateProvider = mockDate(moqDate);
+
+            var period = (int)(dailyLimit / TestDataFactory.DefaultPrice) - 1;
 
             var scooterExtendedLessThanDailyLimit = new ScooterExtended(TestDataFactory.GeneratedId, TestDataFactory.DefaultPrice,
             new List<RentPeriod> {
                                 new RentPeriod {
-                                    RentStarted = rentStartLessThanDailyLimit,
+                                    RentStarted = moqDate.AddMinutes(-period),
                                     RentEnded = null}
             });
 
-            var expectedCostLessThanDailyLimit = GetDatesTotalMinutes(DateTime.UtcNow, rentStartLessThanDailyLimit) * TestDataFactory.DefaultPrice;
+            var expectedCostLessThanDailyLimit = period * TestDataFactory.DefaultPrice;
 
             var testDataSet = new List<ScooterExtended> {
                scooterExtendedLessThanDailyLimit
@@ -118,7 +120,7 @@ namespace ScooterRentalServiceBusinessLogicTests
             scooterExtendedLessThanDailyLimit.IsRented = true;
 
             var scooterService = new ScooterService(testDataSet);
-            var testRentalCompany = new RentalCompany(companyName, scooterService);
+            var testRentalCompany = new RentalCompany(companyName, scooterService, moqDateProvider.Object);
 
             var costLessThanDailyLimit = testRentalCompany.EndRent(scooterExtendedLessThanDailyLimit.Id);
 
@@ -128,23 +130,28 @@ namespace ScooterRentalServiceBusinessLogicTests
         [Fact]
         public void CanEndRentMoreThanDay()
         {
-            var daysDiff = 3;
-            var rentStartMoreThanDay = DateTime.UtcNow
-                .AddDays(-daysDiff);
+            var moqDate = new DateTime(2019, 10, 10, 10, 10, 10, 10);
+            var moqDateProvider = mockDate(moqDate);
+
+            var period = 3;
+
+            var rentStart = moqDate.AddDays(-period);
 
             var scooterExtendedMoreThanDay = new ScooterExtended(TestDataFactory.GeneratedId, TestDataFactory.DefaultPrice,
             new List<RentPeriod> {
                             new RentPeriod {
-                                RentStarted = rentStartMoreThanDay,
+                                RentStarted = rentStart,
                                 RentEnded = null}
             });
 
-            var startCost = GetDatesTotalMinutes(rentStartMoreThanDay.Date.AddDays(1).AddSeconds(-1), rentStartMoreThanDay) * scooterExtendedMoreThanDay.PricePerMinute;
-            var endCost = GetDatesTotalMinutes(DateTime.UtcNow, DateTime.UtcNow.Date) * scooterExtendedMoreThanDay.PricePerMinute;
+            var startCost = GetDatesTotalMinutes(rentStart.Date.AddDays(1).AddSeconds(-1), rentStart) * scooterExtendedMoreThanDay.PricePerMinute;
+            var endCost = GetDatesTotalMinutes(moqDate, moqDate.Date) * scooterExtendedMoreThanDay.PricePerMinute;
 
-            var expectedCostMoreThanDay = (daysDiff - 1) * dailyLimit
+            var expectedCostMoreThanDay = (period - 1) * dailyLimit
                 + (endCost > dailyLimit ? dailyLimit : endCost)
                 + (startCost > dailyLimit ? dailyLimit : startCost);
+
+            var expectedPeriods = period + 1;
 
             var testDataSet = new List<ScooterExtended> {
                scooterExtendedMoreThanDay
@@ -153,29 +160,30 @@ namespace ScooterRentalServiceBusinessLogicTests
             scooterExtendedMoreThanDay.IsRented = true;
 
             var scooterService = new ScooterService(testDataSet);
-            var testRentalCompany = new RentalCompany(companyName, scooterService);
+            var testRentalCompany = new RentalCompany(companyName, scooterService, moqDateProvider.Object);
 
             var costMoreThanDay = testRentalCompany.EndRent(scooterExtendedMoreThanDay.Id);
 
             Assert.False(scooterExtendedMoreThanDay.IsRented);
-            Assert.True(scooterExtendedMoreThanDay.RentPeriods.Count == daysDiff + 1);
+            Assert.True(scooterExtendedMoreThanDay.RentPeriods.Count == expectedPeriods);
             Assert.True(costMoreThanDay == expectedCostMoreThanDay);
         }
         [Fact]
         public void CanEndRentMoreThanLimit()
         {
-            var rentStartMoreThanDailyLimit = DateTime.UtcNow
-                .AddMinutes((int)Math.Round(-dailyLimit / TestDataFactory.DefaultPrice, MidpointRounding.AwayFromZero) - 1);
+            var moqDate = new DateTime(2019, 10, 10, 10, 10, 10, 10);
+            var moqDateProvider = mockDate(moqDate);
+
+            var period = (int)(dailyLimit / TestDataFactory.DefaultPrice) + 1;
 
             var scooterExtendedMoreThanDailyLimit = new ScooterExtended(TestDataFactory.GeneratedId, TestDataFactory.DefaultPrice,
                 new List<RentPeriod> {
                     new RentPeriod {
-                        RentStarted = rentStartMoreThanDailyLimit,
+                        RentStarted = moqDate.AddMinutes(-period),
                         RentEnded = null}
                 });
 
-            var expectedCostMoreThanDailyLimit = rentStartMoreThanDailyLimit.Date != DateTime.UtcNow.Date ?
-                (GetDatesTotalMinutes(DateTime.UtcNow, rentStartMoreThanDailyLimit) * scooterExtendedMoreThanDailyLimit.PricePerMinute) : dailyLimit;
+            var expectedCostMoreThanDailyLimit = dailyLimit;
 
             var testDataSet = new List<ScooterExtended> {
                scooterExtendedMoreThanDailyLimit
@@ -184,7 +192,7 @@ namespace ScooterRentalServiceBusinessLogicTests
             scooterExtendedMoreThanDailyLimit.IsRented = true;
 
             var scooterService = new ScooterService(testDataSet);
-            var testRentalCompany = new RentalCompany(companyName, scooterService);
+            var testRentalCompany = new RentalCompany(companyName, scooterService, moqDateProvider.Object);
 
             var costMoreThanDailyLimit = testRentalCompany.EndRent(scooterExtendedMoreThanDailyLimit.Id);
 
