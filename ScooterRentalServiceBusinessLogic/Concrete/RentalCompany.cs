@@ -8,6 +8,7 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
 {
     public class RentalCompany : IRentalCompany
     {
+        private IDateTimeHelper dateTimeHelper { get; } = new DateTimeHelper();
         public IScooterServiceExtended ScooterService { get; } = new ScooterService();
         //In real world application this value should not be hardcoded, not to mention that this value will change periodically
         //So in real world application it would have been stored on the same data/context layer as rented period
@@ -18,7 +19,11 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
         {
             Name = name;
         }
-
+        public RentalCompany(string name, IDateTimeHelper dateTimeHelper)
+        {
+            Name = name;
+            this.dateTimeHelper = dateTimeHelper;
+        }
         public RentalCompany(string name, IScooterServiceExtended scooterService)
         {
             Name = name;
@@ -28,14 +33,30 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
 
             ScooterService = scooterService;
         }
+        public RentalCompany(string name, IScooterServiceExtended scooterService, IDateTimeHelper dateTimeHelper)
+        {
+            Name = name;
+
+            if (scooterService == null)
+                return;
+
+            ScooterService = scooterService;
+            this.dateTimeHelper = dateTimeHelper;
+        }
 
         public decimal CalculateIncome(int? year, bool includeNotCompletedRentals)
         {
             var scooters = ScooterService.GetExtendedScooters();
 
-            return 0m;
-        }
+            var totalIncome = 0m;
 
+            foreach (var scooter in scooters)
+            {
+                totalIncome += GetScooterIncome(scooter, year, includeNotCompletedRentals);
+            }
+
+            return totalIncome;
+        }
         public decimal EndRent(string id)
         {
             var scooter = ScooterService.GetExtendedScooter(id);
@@ -64,7 +85,7 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
             if (rentTime != null)
                 throw new RentalCompanyException("Corrupted scooter rent periods. Period is not closed");
 
-            scooter.RentPeriods.Add(new RentPeriod { RentStarted = DateTime.Now });
+            scooter.RentPeriods.Add(new RentPeriod { RentStarted = dateTimeHelper.GetUtcDateTimeNow() });
 
             scooter.IsRented = true;
         }
@@ -84,7 +105,7 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
             if (rentTime == null)
                 throw new RentalCompanyException("Corrupted scooter rent periods. Period is not open");
 
-            var endDate = DateTime.UtcNow;
+            var endDate = dateTimeHelper.GetUtcDateTimeNow();
 
             var dayDiff = (int)Math.Round((endDate.Date - rentTime.RentStarted.Date).TotalDays, MidpointRounding.AwayFromZero);
 
@@ -147,6 +168,31 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
                 + (startDayCost > DailyLimit ? DailyLimit : startDayCost)
                 + (endDayCost > DailyLimit ? DailyLimit : endDayCost);
             return cost;
+        }
+
+        private decimal GetScooterIncome(ScooterExtended scooter, int? year, bool includeNotCompletedRentals)
+        {
+            //It was not clear for me whether to completely remove scooter from income or only open renting period
+            //I assumed that logically only open transaction should be excluded instead of complete scooter
+            var result = 0m;
+
+            foreach (var period in scooter.RentPeriods)
+            {
+                var startPeriod = period.RentStarted;
+                var endPeriod = period.RentEnded;
+
+                if (!includeNotCompletedRentals && !period.RentEnded.HasValue)
+                    continue;
+
+                if (year.HasValue && year != startPeriod.Year)
+                    continue;
+
+                var periodCost = GetDatesTotalMinutes(endPeriod ?? dateTimeHelper.GetUtcDateTimeNow(), startPeriod) * scooter.PricePerMinute;
+
+                result += periodCost > DailyLimit ? DailyLimit : periodCost;
+            }
+
+            return result;
         }
     }
 }
