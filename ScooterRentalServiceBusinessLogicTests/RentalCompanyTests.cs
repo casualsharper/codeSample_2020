@@ -206,9 +206,9 @@ namespace ScooterRentalServiceBusinessLogicTests
             var moqDateProvider = mockDate(moqDate);
 
             var period = (int)(dailyLimit / TestDataFactory.DefaultPrice) - 1;
-            var dateBase = moqDate.AddMinutes(-period);
+            var dateBase = moqDate.AddMinutes(-period * 2 - 1);
 
-            var testDataSet = TestDataFactory.GetScooterTestDataSet(dateBase, period);
+            var testDataSet = TestDataFactory.GetScooterTestDataSet(dateBase, periodDays: 1, periodMinutesShift: period);
 
             var scooterService = new ScooterService(testDataSet);
 
@@ -220,7 +220,7 @@ namespace ScooterRentalServiceBusinessLogicTests
 
             var incomeNotNull = testRentalCompany.CalculateIncome(null, false);
             var incomeNull = testRentalCompany.CalculateIncome(null, true);
-            var incomeYear = testRentalCompany.CalculateIncome(2019, false);
+            var incomeYear = testRentalCompany.CalculateIncome(moqDate.Year, false);
 
             Assert.True(incomeNotNull == expectedResultNotNull);
             Assert.True(incomeNull == expectedResultNull);
@@ -233,9 +233,9 @@ namespace ScooterRentalServiceBusinessLogicTests
             var moqDateProvider = mockDate(moqDate);
 
             var period = (int)(dailyLimit / TestDataFactory.DefaultPrice) + 1;
-            var dateBase = moqDate.AddMinutes(-period);
+            var dateBase = moqDate.AddMinutes(-period * 2 - 1);
 
-            var testDataSet = TestDataFactory.GetScooterTestDataSet(dateBase, period);
+            var testDataSet = TestDataFactory.GetScooterTestDataSet(dateBase, periodDays: 1, periodMinutesShift: period);
 
             var scooterService = new ScooterService(testDataSet);
 
@@ -247,7 +247,35 @@ namespace ScooterRentalServiceBusinessLogicTests
 
             var incomeNotNull = testRentalCompany.CalculateIncome(null, false);
             var incomeNull = testRentalCompany.CalculateIncome(null, true);
-            var incomeYear = testRentalCompany.CalculateIncome(2019, false);
+            var incomeYear = testRentalCompany.CalculateIncome(moqDate.Year, false);
+
+            Assert.True(incomeNotNull == expectedResultNotNull);
+            Assert.True(incomeNull == expectedResultNull);
+            Assert.True(incomeYear == expectedResultYear);
+        }
+        [Fact]
+        public void CanCalculateIncomeWithMoreThanOneDay()
+        {
+            var moqDate = new DateTime(2019, 10, 10, 10, 10, 10, 10);
+            var moqDateProvider = mockDate(moqDate);
+
+            var period = 3;
+            var timeshift = 10;
+            var dateBase = moqDate.AddDays(-period - 1);
+
+            var testDataSet = TestDataFactory.GetScooterTestDataSet(dateBase, periodDays: period, periodMinutesShift: timeshift);
+
+            var scooterService = new ScooterService(testDataSet);
+
+            var testRentalCompany = new RentalCompany(companyName, scooterService, moqDateProvider.Object);
+
+            var expectedResultNull = testDataSet.Count * 2 * period * timeshift * TestDataFactory.DefaultPrice + period * timeshift * TestDataFactory.DefaultPrice;
+            var expectedResultNotNull = testDataSet.Count * 2 * period * timeshift * TestDataFactory.DefaultPrice;
+            var expectedResultYear = testDataSet.Count * period * timeshift * TestDataFactory.DefaultPrice;
+
+            var incomeNotNull = testRentalCompany.CalculateIncome(null, false);
+            var incomeNull = testRentalCompany.CalculateIncome(null, true);
+            var incomeYear = testRentalCompany.CalculateIncome(moqDate.Year, false);
 
             Assert.True(incomeNotNull == expectedResultNotNull);
             Assert.True(incomeNull == expectedResultNull);

@@ -89,6 +89,14 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
 
             scooter.IsRented = true;
         }
+        private decimal CalculatePeriodCost(DateTime dte, DateTime dts)
+        {
+            return DailyLimitApplier(GetDatesTotalMinutes(dte, dts));
+        }
+        private decimal DailyLimitApplier(decimal calculatedCost)
+        {
+            return calculatedCost > DailyLimit ? DailyLimit : calculatedCost;
+        }
         private int GetDatesTotalMinutes(DateTime dte, DateTime dts)
         {
             return (int)Math.Round((dte - dts).TotalMinutes, MidpointRounding.AwayFromZero);
@@ -122,15 +130,20 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
                 return cost;
             }
 
-            var closingPeriod = MoreThanOneDayPeriodProcess(rentPeriods, rentTime, endDate, dayDiff);
+            var closingPeriod = MoreThanOneDayPeriodProcess(rentPeriods, rentTime);
 
             cost = GetCost(scooter, rentTime, dayDiff, closingPeriod);
 
             return cost;
         }
 
-        private static RentPeriod MoreThanOneDayPeriodProcess(List<RentPeriod> rentPeriods, RentPeriod rentTime, DateTime endDate, int dayDiff)
+        private RentPeriod MoreThanOneDayPeriodProcess(List<RentPeriod> rentPeriods, RentPeriod rentTime)
         {
+            var endDate = dateTimeHelper.GetUtcDateTimeNow();
+            rentTime.RentEnded = rentTime.RentEnded.HasValue ? rentTime.RentEnded : endDate;
+
+            var dayDiff = (int)Math.Round((endDate.Date - rentTime.RentStarted.Date).TotalDays, MidpointRounding.AwayFromZero);
+
             rentTime.RentEnded = rentTime.RentStarted.Date.AddDays(1).AddSeconds(-1);
 
             for (int i = 1; i < dayDiff; i++)
@@ -176,21 +189,40 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
             //I assumed that logically only open transaction should be excluded instead of complete scooter
             var result = 0m;
 
+            //we do not want to modify original collection on each report
+            var rentPeriods = new List<RentPeriod>();
+
             foreach (var period in scooter.RentPeriods)
             {
-                var startPeriod = period.RentStarted;
-                var endPeriod = period.RentEnded;
-
                 if (!includeNotCompletedRentals && !period.RentEnded.HasValue)
                     continue;
 
-                if (year.HasValue && year != startPeriod.Year)
+                if (year.HasValue && year != period.RentStarted.Year)
                     continue;
 
-                var periodCost = GetDatesTotalMinutes(endPeriod ?? dateTimeHelper.GetUtcDateTimeNow(), startPeriod) * scooter.PricePerMinute;
+                if(!period.RentEnded.HasValue)
+                {
+                    var dtNow = dateTimeHelper.GetUtcDateTimeNow();
+                    var periodClone = new RentPeriod { RentStarted = period.RentStarted , RentEnded = dtNow };
 
-                result += periodCost > DailyLimit ? DailyLimit : periodCost;
+                    if(dtNow.Date != period.RentStarted.Date)
+                    {
+                        MoreThanOneDayPeriodProcess(rentPeriods, periodClone);
+                    }
+                    else
+                    {
+                        rentPeriods.Add(periodClone);
+                    }
+                }
+                else
+                {
+                    rentPeriods.Add(period);
+                }
             }
+
+            result += rentPeriods.Sum(s =>
+            CalculatePeriodCost(s.RentEnded.Value, s.RentStarted) * scooter.PricePerMinute
+            );
 
             return result;
         }
