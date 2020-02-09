@@ -11,7 +11,7 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
         public IScooterServiceExtended ScooterService { get; } = new ScooterService();
         //In real world application this value should not be hardcoded, not to mention that this value will change periodically
         //So in real world application it would have been stored on the same data/context layer as rented period
-        private readonly decimal dailyLimit = 20m;
+        public decimal DailyLimit { get; } = 20m;
         public string Name { get; }
 
         public RentalCompany(string name)
@@ -31,7 +31,9 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
 
         public decimal CalculateIncome(int? year, bool includeNotCompletedRentals)
         {
-            throw new NotImplementedException();
+            var scooters = ScooterService.GetExtendedScooters();
+
+            return 0m;
         }
 
         public decimal EndRent(string id)
@@ -81,21 +83,33 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
 
             if (rentTime == null)
                 throw new RentalCompanyException("Corrupted scooter rent periods. Period is not open");
-            
+
             var endDate = DateTime.UtcNow;
 
             var dayDiff = (int)Math.Round((endDate.Date - rentTime.RentStarted.Date).TotalDays, MidpointRounding.AwayFromZero);
 
-            if(dayDiff == 0)
+            if (dayDiff < 0)
+                throw new RentalCompanyException("Corrupted scooter rent periods. End datetime is less than start datetime");
+
+            if (dayDiff == 0)
             {
                 rentTime.RentEnded = endDate;
                 cost = GetDatesTotalMinutes(rentTime.RentEnded.Value, rentTime.RentStarted) * scooter.PricePerMinute;
 
-                cost = cost > dailyLimit ? dailyLimit : cost;
+                cost = cost > DailyLimit ? DailyLimit : cost;
 
                 return cost;
             }
 
+            var closingPeriod = MoreThanOneDayPeriodProcess(rentPeriods, rentTime, endDate, dayDiff);
+
+            cost = GetCost(scooter, rentTime, dayDiff, closingPeriod);
+
+            return cost;
+        }
+
+        private static RentPeriod MoreThanOneDayPeriodProcess(List<RentPeriod> rentPeriods, RentPeriod rentTime, DateTime endDate, int dayDiff)
+        {
             rentTime.RentEnded = rentTime.RentStarted.Date.AddDays(1).AddSeconds(-1);
 
             for (int i = 1; i < dayDiff; i++)
@@ -103,7 +117,8 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
                 var dtStarted = rentTime.RentStarted.AddDays(i).Date;
                 var dtEnded = dtStarted.AddDays(1).AddSeconds(-1);
 
-                rentPeriods.Add(new RentPeriod { 
+                rentPeriods.Add(new RentPeriod
+                {
                     RentStarted = dtStarted,
                     RentEnded = dtEnded
                 });
@@ -116,17 +131,21 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
             };
 
             rentPeriods.Add(closingPeriod);
+            return closingPeriod;
+        }
 
+        private decimal GetCost(ScooterExtended scooter, RentPeriod rentTime, int dayDiff, RentPeriod closingPeriod)
+        {
+            decimal cost;
             var fullDays = dayDiff - 1;
 
             var fullDayCost = 24 * 60 * fullDays * scooter.PricePerMinute;
             var startDayCost = GetDatesTotalMinutes(rentTime.RentEnded.Value, rentTime.RentStarted) * scooter.PricePerMinute;
             var endDayCost = GetDatesTotalMinutes(closingPeriod.RentEnded.Value, closingPeriod.RentStarted) * scooter.PricePerMinute;
 
-            cost = (24 * 60 * scooter.PricePerMinute > dailyLimit ? dailyLimit * fullDays : fullDayCost) 
-                + (startDayCost > dailyLimit ? dailyLimit : startDayCost)
-                + (endDayCost > dailyLimit ? dailyLimit : endDayCost);
-
+            cost = (24 * 60 * scooter.PricePerMinute > DailyLimit ? DailyLimit * fullDays : fullDayCost)
+                + (startDayCost > DailyLimit ? DailyLimit : startDayCost)
+                + (endDayCost > DailyLimit ? DailyLimit : endDayCost);
             return cost;
         }
     }

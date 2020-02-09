@@ -10,11 +10,16 @@ namespace ScooterRentalServiceBusinessLogicTests
 {
     public class RentalCompanyTests
     {
-        private readonly decimal dailyLimit = 20m;
+        private readonly RentalCompany templateCompany;
         private readonly string companyName = "TestCompany";
+        private decimal dailyLimit => templateCompany.DailyLimit;
         private int GetDatesTotalMinutes(DateTime dte, DateTime dts)
         {
             return (int)Math.Round((dte - dts).TotalMinutes,MidpointRounding.AwayFromZero);
+        }
+        public RentalCompanyTests()
+        {
+            templateCompany = new RentalCompany(companyName);
         }
         [Fact]
         public void CanThrowStartRent()
