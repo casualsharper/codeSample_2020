@@ -17,12 +17,14 @@ namespace ScooterRentalServiceBusinessLogicTests
 
             for (int i = 0; i < periodDays; i++)
             {
-                rentPeriod.Add(new RentPeriod { RentStarted = dateTemplate.AddDays(i), RentEnded = dateTemplate.AddDays(i).AddMinutes(periodMinutesShift) });
-                rentPeriod.Add(new RentPeriod { RentStarted = dateTemplate.AddDays(i).AddYears(-1), RentEnded = dateTemplate.AddDays(i).AddYears(-1).AddMinutes(periodMinutesShift) });
-
                 if(i == periodDays - 1)
                 {
-                    rentPeriod.Add(new RentPeriod { RentStarted = dateTemplate.AddDays(i).AddMinutes(periodMinutesShift + 1), RentEnded = null });
+                    rentPeriod.Add(new RentPeriod { RentStarted = dateTemplate.AddDays(i), RentEnded = null });
+                }
+                else
+                {
+                    rentPeriod.Add(new RentPeriod { RentStarted = dateTemplate.AddDays(i), RentEnded = dateTemplate.AddDays(i).AddMinutes(periodMinutesShift) });
+                    rentPeriod.Add(new RentPeriod { RentStarted = dateTemplate.AddDays(i).AddYears(-1), RentEnded = dateTemplate.AddDays(i).AddYears(-1).AddMinutes(periodMinutesShift) });
                 }
             }
 

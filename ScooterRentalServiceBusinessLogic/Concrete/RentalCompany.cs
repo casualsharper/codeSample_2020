@@ -218,9 +218,18 @@ namespace ScooterRentalServiceBusinessLogic.Concrete
                 }
             }
 
-            result += rentPeriods.Sum(s =>
-            CalculatePeriodCost(s.RentEnded.Value, s.RentStarted) * scooter.PricePerMinute
-            );
+            var grouped = rentPeriods.GroupBy(s => s.RentStarted.Date);
+
+            foreach (var group in grouped)
+            {
+                var localCost = 0m;
+                foreach (var period in group)
+                {
+                    localCost += CalculatePeriodCost(period.RentEnded.Value, period.RentStarted) * scooter.PricePerMinute;
+                }
+
+                result += DailyLimitApplier(localCost);
+            }
 
             return result;
         }

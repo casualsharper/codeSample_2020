@@ -206,16 +206,17 @@ namespace ScooterRentalServiceBusinessLogicTests
             var moqDateProvider = mockDate(moqDate);
 
             var period = (int)(dailyLimit / TestDataFactory.DefaultPrice) - 1;
-            var dateBase = moqDate.AddMinutes(-period * 2 - 1);
+            var periodDays = 2;
+            var dateBase = moqDate.AddDays(-periodDays + 1).AddMinutes(-period);
 
-            var testDataSet = TestDataFactory.GetScooterTestDataSet(dateBase, periodDays: 1, periodMinutesShift: period);
+            var testDataSet = TestDataFactory.GetScooterTestDataSet(dateBase, periodDays: periodDays, periodMinutesShift: period);
 
             var scooterService = new ScooterService(testDataSet);
 
             var testRentalCompany = new RentalCompany(companyName, scooterService, moqDateProvider.Object);
-
-            var expectedResultNull = testDataSet.Count * 3 * TestDataFactory.DefaultPrice * period;
+            
             var expectedResultNotNull = testDataSet.Count * 2 * TestDataFactory.DefaultPrice * period;
+            var expectedResultNull = expectedResultNotNull + testDataSet.Count * TestDataFactory.DefaultPrice * period;
             var expectedResultYear = testDataSet.Count * TestDataFactory.DefaultPrice * period;
 
             var incomeNotNull = testRentalCompany.CalculateIncome(null, false);
@@ -235,7 +236,7 @@ namespace ScooterRentalServiceBusinessLogicTests
             var period = (int)(dailyLimit / TestDataFactory.DefaultPrice) + 1;
             var dateBase = moqDate.AddMinutes(-period * 2 - 1);
 
-            var testDataSet = TestDataFactory.GetScooterTestDataSet(dateBase, periodDays: 1, periodMinutesShift: period);
+            var testDataSet = TestDataFactory.GetScooterTestDataSet(dateBase, periodDays: 2, periodMinutesShift: period);
 
             var scooterService = new ScooterService(testDataSet);
 
@@ -260,7 +261,7 @@ namespace ScooterRentalServiceBusinessLogicTests
             var moqDateProvider = mockDate(moqDate);
 
             var period = 3;
-            var timeshift = 10;
+            var timeshift = (int)(dailyLimit / TestDataFactory.DefaultPrice) - 1;
             var dateBase = moqDate.AddDays(-period);
 
             var testDataSet = TestDataFactory.GetScooterTestDataSet(dateBase, periodDays: period, periodMinutesShift: timeshift);
@@ -269,9 +270,9 @@ namespace ScooterRentalServiceBusinessLogicTests
 
             var testRentalCompany = new RentalCompany(companyName, scooterService, moqDateProvider.Object);
 
-            var expectedResultNotNull = testDataSet.Count * 2 * period * timeshift * TestDataFactory.DefaultPrice;
+            var expectedResultNotNull = testDataSet.Count * 2 * (period - 1) * timeshift * TestDataFactory.DefaultPrice;
             var expectedResultNull = expectedResultNotNull + dailyLimit * TestDataFactory.DefaultPrice * testDataSet.Count * 2;
-            var expectedResultYear = testDataSet.Count * period * timeshift * TestDataFactory.DefaultPrice;
+            var expectedResultYear = testDataSet.Count * (period - 1) * timeshift * TestDataFactory.DefaultPrice;
 
             var incomeNotNull = testRentalCompany.CalculateIncome(null, false);
             var incomeNull = testRentalCompany.CalculateIncome(null, true);
@@ -280,6 +281,37 @@ namespace ScooterRentalServiceBusinessLogicTests
             Assert.True(incomeNotNull == expectedResultNotNull);
             Assert.True(incomeNull == expectedResultNull);
             Assert.True(incomeYear == expectedResultYear);
+        }
+        [Fact]
+        public void CanCalculateIncomeWithLimitRespectMultipleEntries()
+        {
+            var moqDate = new DateTime(2019, 10, 10, 10, 10, 10, 10);
+            var moqDateProvider = mockDate(moqDate);
+
+            var periodDays = 2;
+            var periodTimeShift = (int)(dailyLimit / TestDataFactory.DefaultPrice) - 1;
+
+            var rentPeriods = new List<RentPeriod>
+            {
+                new RentPeriod{ RentStarted = moqDate.AddDays(-periodDays), RentEnded = moqDate.AddDays(-periodDays).AddMinutes(periodTimeShift)},
+                new RentPeriod{ RentStarted = moqDate.AddDays(-periodDays).AddMinutes(periodTimeShift + 1), RentEnded = moqDate.AddDays(-periodDays).AddMinutes(periodTimeShift * 2)},
+                new RentPeriod{ RentStarted = moqDate.AddDays(-periodDays + 1), RentEnded = moqDate.AddDays(-periodDays + 1).AddMinutes(periodTimeShift) },
+                new RentPeriod{ RentStarted = moqDate.AddDays(-periodDays + 1).AddMinutes(periodTimeShift + 1), RentEnded = moqDate.AddDays(-periodDays + 1).AddMinutes(periodTimeShift * 2) }
+            };
+
+            var testDataSet = new List<ScooterExtended> { 
+                new ScooterExtended(TestDataFactory.GeneratedId, TestDataFactory.DefaultPrice, rentPeriods)
+            };
+
+            var scooterService = new ScooterService(testDataSet);
+
+            var testRentalCompany = new RentalCompany(companyName, scooterService, moqDateProvider.Object);
+
+            var expectedResult = dailyLimit * 2;
+
+            var income = testRentalCompany.CalculateIncome(null, true);
+
+            Assert.True(income == expectedResult);
         }
     }
 }
